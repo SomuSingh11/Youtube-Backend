@@ -1,13 +1,13 @@
 // The asyncHandler utility function is designed to handle asynchronous route handlers in an Express application.
 
-const asyncHnadler = (requestHandler) => {
+const asyncHandler = (requestHandler) => {
   return (req, res, next) => {
     Promise.resolve(requestHandler(req, res, next)) // Wrap the request handler in a Promise and resolve it
       .catch((err) => next(err)); // Catch and pass the error to the next middleware
   };
 };
 
-export { asyncHnadler };
+export { asyncHandler };
 
 // Another method to implement asyncHandler Utility using try-catch
 /*
