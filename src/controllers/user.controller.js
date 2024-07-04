@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import fs from "fs";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
@@ -23,8 +24,10 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Check for avatar and coverImage file in the request
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  const avatarLocalPath = req.files.avatar ? req.files.avatar[0]?.path : null;
+  const coverImageLocalPath = req.files.coverImage
+    ? req.files.coverImage[0]?.path
+    : null;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required!");
