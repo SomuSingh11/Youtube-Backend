@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
-// FUNCTION TO GENERATE ACCESS AND REFRESH TOKEN
+/* <--------------- Function to generate access and refresh Token ---------------> */
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -28,7 +28,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
-// REGISTER USER
+/* <--------------- Register User ---------------> */
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
@@ -89,7 +89,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Registered Successfully!"));
 });
 
-// LOGIN USER
+/* <--------------- LogIn User ---------------> */
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
@@ -113,7 +113,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // Generate access and refresh tokens for the authenticated user
-  const { accessToken, refreshToken } = generateAccessAndRefreshTokens(
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
 
@@ -146,4 +146,31 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser };
+/* <--------------- Logout User ---------------> */
+const logoutUser = asyncHandler(async (req, res) => {
+  // req.user._id is stored in req object because of auth.middleware (verifyJWT)
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: {
+        refreshToken: 1, // Unset (remove) the refreshToken field from the user document
+      },
+    },
+    {
+      new: true, // Return the updated document
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "user logged out!"));
+});
+
+export { registerUser, loginUser, logoutUser };
