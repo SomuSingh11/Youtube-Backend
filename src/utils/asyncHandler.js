@@ -4,15 +4,7 @@ import fs from "fs";
 const asyncHandler = (requestHandler) => {
   return (req, res, next) => {
     Promise.resolve(requestHandler(req, res, next)) // Wrap the request handler in a Promise and resolve it
-      .catch((err) => next(err)) // Catch and pass the error to the next middleware
-      .finally(() => {
-        if (req.files?.avatar) {
-          fs.unlinkSync(req.files.avatar[0].path);
-        }
-        if (req.files?.coverImage) {
-          fs.unlinkSync(req.files.coverImage[0].path);
-        }
-      });
+      .catch((err) => next(err)); // Catch and pass the error to the next middleware
   };
 };
 
