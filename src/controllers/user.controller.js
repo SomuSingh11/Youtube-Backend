@@ -5,7 +5,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
-/* <--------------- Function to generate access and refresh Token ---------------> */
+/* <-------------------- Function to generate access and refresh Token --------------------> */
+
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -29,7 +30,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
-/* <--------------- Register User ---------------> */
+/* <-------------------- Register User --------------------> */
+
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
@@ -90,7 +92,8 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Registered Successfully!"));
 });
 
-/* <--------------- LogIn User ---------------> */
+/* <-------------------- LogIn User --------------------> */
+
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
@@ -147,7 +150,8 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-/* <--------------- Logout User ---------------> */
+/* <-------------------- Logout User --------------------> */
+
 const logoutUser = asyncHandler(async (req, res) => {
   // req.user._id is stored in req object because of auth.middleware (verifyJWT)
   await User.findByIdAndUpdate(
@@ -174,7 +178,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "user logged out!"));
 });
 
-/* <--------------- Renew Access Token via Refresh Token ---------------> */
+/* <-------------------- Renew Access Token via Refresh Token --------------------> */
+
 const refreshAccessToken = asyncHandler(async (rq, res) => {
   /* Extract refresh token ----> decode the token ----> find associated user with token 
    ----> check if it matches with user's token ----> generate new tokens */
@@ -233,7 +238,8 @@ const refreshAccessToken = asyncHandler(async (rq, res) => {
   }
 });
 
-/* <--------------- Change Password ---------------> */
+/* <-------------------- Change Password --------------------> */
+
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -255,14 +261,16 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password changed successfully!"));
 });
 
-/* <--------------- Get Current User ---------------> */
+/* <-------------------- Get Current User --------------------> */
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, req.user, "User fetched successfully!"));
 });
 
-/* <--------------- Update Account Details ---------------> */
+/* <-------------------- Update Account Details --------------------> */
+
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
 
