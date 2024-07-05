@@ -233,4 +233,76 @@ const refreshAccessToken = asyncHandler(async (rq, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+/* <--------------- Change Password ---------------> */
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  // Find the user by their ID passed via verifyJWT Middleware
+  const user = await User.find(req.user?._id);
+
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Invalid old password!");
+  }
+
+  user.password = newPassword; // Update the user's password
+
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully!"));
+});
+
+/* <--------------- Get Current User ---------------> */
+const getCurrentUser = asyncHandler(async (req, res) => {
+  res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User fetched successfully!"));
+});
+
+/* <--------------- Update Account Details ---------------> */
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+
+  if (!fullName && !email) {
+    throw new ApiError(
+      400,
+      "Atleat one of the field (fullName or email) is required"
+    );
+  }
+
+  // Create an update object and add the fields that are to be updated
+  const updateFields = {};
+  if (fullName) {
+    updateFields.fullName = fullName;
+  }
+  if (email) {
+    updateFields.email = email;
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: updateFields, // Set the provided fields
+    },
+    {
+      new: true, // Return the updated document
+    }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated successfully!"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+};
