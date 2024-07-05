@@ -3,8 +3,32 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import fs from "fs";
 
+// FUNCTION TO GENERATE ACCESS AND REFRESH TOKEN
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+
+    // generate access and refresh token
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+
+    // Save the updated user record to the database without running validation
+    // as we don't require password {required: true} validation at this point
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while creating access and refresh Token!"
+    );
+  }
+};
+
+// REGISTER USER
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, username, password } = req.body;
 
@@ -65,4 +89,61 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Registered Successfully!"));
 });
 
-export { registerUser };
+// LOGIN USER
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, username, password } = req.body;
+
+  // Validation: Ensure either email or username is provided
+  if (!email && !username) {
+    throw new ApiError(400, "username or email is required!");
+  }
+
+  const user = await User.findOne({
+    $or: [{ email }, { username }],
+  });
+
+  if (!user) {
+    throw ApiError(404, "user doesn't exist!");
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw ApiError(401, "Invalid user credentials!");
+  }
+
+  // Generate access and refresh tokens for the authenticated user
+  const { accessToken, refreshToken } = generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  // Find the user again to exclude the password and refreshToken from the response
+  // and also to ensure that this reference to user contains refreshToken updated
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  // Options for setting cookies, making them HTTP only and secure (can't be changed via frontend)
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in Successfully!"
+      )
+    );
+});
+
+export { registerUser, loginUser };
