@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
+import mongoose from "mongoose";
 
 /* <-------------------- Function to generate access and refresh Token --------------------> */
 
@@ -365,6 +366,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 /* <-------------------- Update Cover Image of User --------------------> */
+
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file ? req.file.path : null;
 
@@ -393,7 +395,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Cover Image updated successfully!"));
 });
 
-/* <-------------------- Get User Channel Profile--------------------> */
+/* <-------------------- Get User Channel Profile --------------------> */
+
 const getUserChannelUserProfile = asyncHandler(async (req, res) => {
   // Extract the username from the request parameters
   const { username } = req.params;
@@ -476,6 +479,65 @@ const getUserChannelUserProfile = asyncHandler(async (req, res) => {
     );
 });
 
+/* <-------------------- Get Watch History -------------------> */
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id), // Match the user by their ObjectId
+      },
+    },
+
+    {
+      // Perform a lookup to join the watchHistory field with the videos collection
+      $lookup: {
+        from: "videos", // The collection to join with
+        localField: "watchHistory", // The field from the user document to match
+        foreignField: "_id", // The field from the video document to match with
+        as: "watchHistory", // The output array field
+        pipeline: [
+          {
+            // Perform a nested lookup to join the owner field with the users collection
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  // Project specific fields from the owner document
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            // Add the first element of the owner array as the owner field
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      user[0].watchHistory, // Extract the watchHistory array from the first user document
+      "Watch History fetched successfully!"
+    )
+  );
+});
+
 export {
   registerUser,
   loginUser,
@@ -486,4 +548,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelUserProfile,
+  getWatchHistory,
 };
